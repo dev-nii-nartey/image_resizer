@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Image Resizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.97);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 2.8em;
+            font-weight: 300;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section h2 {
+            color: #4a5568;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .size-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .size-category {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .size-category h3 {
+            margin: 0 0 15px 0;
+            color: #4a5568;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .size-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+        
+        .size-option:hover {
+            background: #edf2f7;
+            transform: translateX(5px);
+        }
+        
+        .size-option.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #4c51bf;
+        }
+        
+        .size-name {
+            font-weight: 500;
+        }
+        
+        .size-dimensions {
+            font-size: 13px;
+            color: #718096;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .size-option.selected .size-dimensions {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .custom-size {
+            background: #fff5d6;
+            border: 2px solid #f6ad55;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .custom-inputs {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .custom-inputs input {
+            width: 100px;
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .custom-inputs input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .upload-area {
+            border: 3px dashed #cbd5e0;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            background: #f8fafc;
+        }
+        
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e6fffa;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .preview-section {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .preview-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .preview-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .preview-box {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .preview-box h3 {
+            margin-top: 0;
+            color: #4a5568;
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+        
+        .image-container {
+            background: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .download-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+            margin: 10px;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(72, 187, 120, 0.4);
+        }
+        
+        .info {
+            background: #e6fffa;
+            border-left: 4px solid #38b2ac;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .dimensions {
+            font-size: 13px;
+            color: #718096;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+        
+        .selected-size-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .aspect-ratio-options {
+            margin-top: 15px;
+        }
+        
+        .ratio-option {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 15px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .ratio-option:hover {
+            border-color: #667eea;
+            background: #edf2f7;
+        }
+        
+        .ratio-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Universal Image Resizer</h1>
+        <p class="subtitle">Resize images to any popular format - Social media, web, print, and more!</p>
+        
+        <div class="section">
+            <h2>📐 Choose Your Size</h2>
+            
+            <div class="size-selector">
+                <div class="size-category">
+                    <h3>📱 Social Media - Square</h3>
+                    <div class="size-option" data-width="1080" data-height="1080" data-name="Instagram Post">
+                        <span class="size-name">Instagram Post</span>
+                        <span class="size-dimensions">1080×1080</span>
+                    </div>
+                    <div class="size-option" data-width="1200" data-height="1200" data-name="Facebook Post">
+                        <span class="size-name">Facebook Post</span>
+                        <span class="size-dimensions">1200×1200</span>
+                    </div>
+                    <div class="size-option" data-width="1000" data-height="1000" data-name="LinkedIn Post">
+                        <span class="size-name">LinkedIn Post</span>
+                        <span class="size-dimensions">1000×1000</span>
+                    </div>
+                    <div class="size-option" data-width="735" data-height="735" data-name="Pinterest Square">
+                        <span class="size-name">Pinterest Square</span>
+                        <span class="size-dimensions">735×735</span>
+                    </div>
+                </div>
+                
+                <div class="size-category">
+                    <h3>🖼️ Social Media - Stories</h3>
+                    <div class="size-option" data-width="1080" data-height="1920" data-name="Instagram Story">
+                        <span class="size-name">Instagram Story</span>
+                        <span class="size-dimensions">1080×1920</span>
+                    </div>
+                    <div class="size-option" data-width="1080" data-height="1920" data-name="Facebook Story">
+                        <span class="size-name">Facebook Story</span>
+                        <span class="size-dimensions">1080×1920</span>
+                    </div>
+                    <div class="size-option" data-width="1080" data-height="1920" data-name="TikTok Video">
+                        <span class="size-name">TikTok Video</span>
+                        <span class="size-dimensions">1080×1920</span>
+                    </div>
+                    <div class="size-option" data-width="1080" data-height="1920" data-name="YouTube Shorts">
+                        <span class="size-name">YouTube Shorts</span>
+                        <span class="size-dimensions">1080×1920</span>
+                    </div>
+                </div>
+                
+                <div class="size-category">
+                    <h3>🏞️ Social Media - Banners</h3>
+                    <div class="size-option" data-width="1920" data-height="1080" data-name="Facebook Cover">
+                        <span class="size-name">Facebook Cover</span>
+                        <span class="size-dimensions">1920×1080</span>
+                    </div>
+                    <div class="size-option" data-width="1500" data-height="500" data-name="Twitter Header">
+                        <span class="size-name">Twitter Header</span>
+                        <span class="size-dimensions">1500×500</span>
+                    </div>
+                    <div class="size-option" data-width="1584" data-height="396" data-name="LinkedIn Banner">
+                        <span class="size-name">LinkedIn Banner</span>
+                        <span class="size-dimensions">1584×396</span>
+                    </div>
+                    <div class="size-option" data-width="2560" data-height="1440" data-name="YouTube Channel Art">
+                        <span class="size-name">YouTube Channel Art</span>
+                        <span class="size-dimensions">2560×1440</span>
+                    </div>
+                </div>
+                
+                <div class="size-category">
+                    <h3>👤 Profile Pictures</h3>
+                    <div class="size-option" data-width="400" data-height="400" data-name="Instagram Profile">
+                        <span class="size-name">Instagram Profile</span>
+                        <span class="size-dimensions">400×400</span>
+                    </div>
+                    <div class="size-option" data-width="180" data-height="180" data-name="Facebook Profile">
+                        <span class="size-name">Facebook Profile</span>
+                        <span class="size-dimensions">180×180</span>
+                    </div>
+                    <div class="size-option" data-width="400" data-height="400" data-name="Twitter Profile">
+                        <span class="size-name">Twitter Profile</span>
+                        <span class="size-dimensions">400×400</span>
+                    </div>
+                    <div class="size-option" data-width="300" data-height="300" data-name="LinkedIn Profile">
+                        <span class="size-name">LinkedIn Profile</span>
+                        <span class="size-dimensions">300×300</span>
+                    </div>
+                </div>
+                
+                <div class="size-category">
+                    <h3>💻 Web & Digital</h3>
+                    <div class="size-option" data-width="1920" data-height="1080" data-name="Website Hero">
+                        <span class="size-name">Website Hero</span>
+                        <span class="size-dimensions">1920×1080</span>
+                    </div>
+                    <div class="size-option" data-width="1200" data-height="630" data-name="Blog Featured">
+                        <span class="size-name">Blog Featured</span>
+                        <span class="size-dimensions">1200×630</span>
+                    </div>
+                    <div class="size-option" data-width="728" data-height="90" data-name="Banner Ad">
+                        <span class="size-name">Banner Ad</span>
+                        <span class="size-dimensions">728×90</span>
+                    </div>
+                    <div class="size-option" data-width="300" data-height="250" data-name="Medium Rectangle Ad">
+                        <span class="size-name">Medium Rectangle Ad</span>
+                        <span class="size-dimensions">300×250</span>
+                    </div>
+                </div>
+                
+                <div class="size-category">
+                    <h3>🖨️ Print & Standard</h3>
+                    <div class="size-option" data-width="2480" data-height="3508" data-name="A4 (300 DPI)">
+                        <span class="size-name">A4 (300 DPI)</span>
+                        <span class="size-dimensions">2480×3508</span>
+                    </div>
+                    <div class="size-option" data-width="3000" data-height="2000" data-name="Business Card">
+                        <span class="size-name">Business Card</span>
+                        <span class="size-dimensions">3000×2000</span>
+                    </div>
+                    <div class="size-option" data-width="1920" data-height="1080" data-name="HD Wallpaper">
+                        <span class="size-name">HD Wallpaper</span>
+                        <span class="size-dimensions">1920×1080</span>
+                    </div>
+                    <div class="size-option" data-width="3840" data-height="2160" data-name="4K Wallpaper">
+                        <span class="size-name">4K Wallpaper</span>
+                        <span class="size-dimensions">3840×2160</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="custom-size">
+                <h3 style="margin: 0 0 15px 0; color: #d69e2e;">⚙️ Custom Size</h3>
+                <div class="custom-inputs">
+                    <label>Width:</label>
+                    <input type="number" id="customWidth" placeholder="Width" min="1" max="10000">
+                    <span>×</span>
+                    <label>Height:</label>
+                    <input type="number" id="customHeight" placeholder="Height" min="1" max="10000">
+                    <button class="upload-btn" onclick="setCustomSize()" style="padding: 8px 20px; font-size: 14px;">Apply</button>
+                </div>
+                
+                <div class="aspect-ratio-options">
+                    <strong>Quick Ratios:</strong>
+                    <span class="ratio-option" onclick="setRatio(1, 1)">1:1</span>
+                    <span class="ratio-option" onclick="setRatio(16, 9)">16:9</span>
+                    <span class="ratio-option" onclick="setRatio(4, 3)">4:3</span>
+                    <span class="ratio-option" onclick="setRatio(3, 2)">3:2</span>
+                    <span class="ratio-option" onclick="setRatio(9, 16)">9:16</span>
+                    <span class="ratio-option" onclick="setRatio(2, 3)">2:3</span>
+                </div>
+            </div>
+            
+            <div class="selected-size-info" id="selectedSizeInfo" style="display: none;">
+                📏 Selected: <span id="selectedSizeName">None</span> - <span id="selectedSizeDimensions">0×0</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>📁 Upload Your Image</h2>
+            
+            <div class="upload-area" id="uploadArea">
+                <div style="font-size: 48px; margin-bottom: 20px;">📁</div>
+                <p style="font-size: 18px; margin-bottom: 15px;">Drop your image here or click to upload</p>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    Choose Image
+                </button>
+                <input type="file" id="fileInput" accept="image/*">
+                <p style="margin-top: 15px; font-size: 14px; color: #718096;">
+                    Supports PNG, JPG, GIF, WebP, and other formats
+                </p>
+            </div>
+            
+            <div class="info">
+                <strong>🎨 Transparency:</strong> Preserved for PNG images<br>
+                <strong>📐 Aspect Ratio:</strong> Maintained with smart padding or cropping<br>
+                <strong>🔧 Quality:</strong> High-quality resizing with canvas optimization
+            </div>
+        </div>
+        
+        <div class="preview-section" id="previewSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3>📥 Original Image</h3>
+                    <div class="image-container">
+                        <img id="originalImg" alt="Original">
+                    </div>
+                    <div class="dimensions" id="originalDimensions"></div>
+                </div>
+                
+                <div class="preview-box">
+                    <h3>📤 Resized Image</h3>
+                    <div class="image-container">
+                        <img id="resizedImg" alt="Resized">
+                    </div>
+                    <div class="dimensions" id="resizedDimensions"></div>
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="download-btn" id="downloadBtn">
+                    📥 Download Resized Image
+                </button>
+                <button class="download-btn" onclick="location.reload()" style="background: linear-gradient(135deg, #718096 0%, #4a5568 100%);">
+                    🔄 Resize Another
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const previewSection = document.getElementById('previewSection');
+        const originalImg = document.getElementById('originalImg');
+        const resizedImg = document.getElementById('resizedImg');
+        const originalDimensions = document.getElementById('originalDimensions');
+        const resizedDimensions = document.getElementById('resizedDimensions');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progressFill = document.getElementById('progressFill');
+        const selectedSizeInfo = document.getElementById('selectedSizeInfo');
+        const selectedSizeName = document.getElementById('selectedSizeName');
+        const selectedSizeDimensions = document.getElementById('selectedSizeDimensions');
+        
+        let resizedCanvas = null;
+        let targetWidth = 1080;
+        let targetHeight = 1080;
+        let selectedSizeTitle = "Instagram Post";
+
+        // Initialize with default selection
+        document.querySelector('.size-option[data-name="Instagram Post"]').classList.add('selected');
+        updateSelectedSizeInfo();
+
+        // Size selection
+        document.querySelectorAll('.size-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                targetWidth = parseInt(this.dataset.width);
+                targetHeight = parseInt(this.dataset.height);
+                selectedSizeTitle = this.dataset.name;
+                
+                updateSelectedSizeInfo();
+                
+                // Re-resize if image is already loaded
+                if (originalImg.src) {
+                    const img = new Image();
+                    img.onload = () => resizeImage(img, 'image/png');
+                    img.src = originalImg.src;
+                }
+            });
+        });
+
+        function updateSelectedSizeInfo() {
+            selectedSizeName.textContent = selectedSizeTitle;
+            selectedSizeDimensions.textContent = `${targetWidth}×${targetHeight}`;
+            selectedSizeInfo.style.display = 'block';
+        }
+
+        function setCustomSize() {
+            const width = parseInt(document.getElementById('customWidth').value);
+            const height = parseInt(document.getElementById('customHeight').value);
+            
+            if (width > 0 && height > 0 && width <= 10000 && height <= 10000) {
+                document.querySelectorAll('.size-option').forEach(opt => opt.classList.remove('selected'));
+                
+                targetWidth = width;
+                targetHeight = height;
+                selectedSizeTitle = "Custom Size";
+                
+                updateSelectedSizeInfo();
+                
+                // Re-resize if image is already loaded
+                if (originalImg.src) {
+                    const img = new Image();
+                    img.onload = () => resizeImage(img, 'image/png');
+                    img.src = originalImg.src;
+                }
+            } else {
+                alert('Please enter valid dimensions (1-10000 pixels)');
+            }
+        }
+
+        function setRatio(ratioW, ratioH) {
+            document.querySelectorAll('.ratio-option').forEach(opt => opt.classList.remove('selected'));
+            event.target.classList.add('selected');
+            
+            const baseSize = 1000;
+            if (ratioW >= ratioH) {
+                document.getElementById('customWidth').value = baseSize;
+                document.getElementById('customHeight').value = Math.round(baseSize * ratioH / ratioW);
+            } else {
+                document.getElementById('customHeight').value = baseSize;
+                document.getElementById('customWidth').value = Math.round(baseSize * ratioW / ratioH);
+            }
+        }
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function updateProgress(percent) {
+            progressFill.style.width = percent + '%';
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select a valid image file.');
+                return;
+            }
+
+            updateProgress(20);
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                updateProgress(50);
+                const img = new Image();
+                
+                img.onload = function() {
+                    updateProgress(70);
+                    
+                    // Display original image
+                    originalImg.src = e.target.result;
+                    originalDimensions.textContent = `${img.width} × ${img.height} pixels`;
+                    
+                    // Resize image
+                    resizeImage(img, file.type);
+                    
+                    updateProgress(100);
+                    previewSection.style.display = 'block';
+                    
+                    // Hide progress bar after completion
+                    setTimeout(() => {
+                        document.querySelector('.progress-bar').style.display = 'none';
+                    }, 1000);
+                };
+                
+                img.src = e.target.result;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function resizeImage(img, fileType) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            
+            // Calculate scaling to fit within target dimensions while maintaining aspect ratio
+            const scaleX = targetWidth / img.width;
+            const scaleY = targetHeight / img.height;
+            const scale = Math.min(scaleX, scaleY);
+            
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
+            
+            // Center the image
+            const offsetX = (targetWidth - scaledWidth) / 2;
+            const offsetY = (targetHeight - scaledHeight) / 2;
+            
+            // Clear canvas with transparent background
+            ctx.clearRect(0, 0, targetWidth, targetHeight);
+            
+            // Enable smooth scaling
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Draw the resized image
+            ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+            
+            // Display resized image
+            resizedImg.src = canvas.toDataURL('image/png');
+            resizedDimensions.textContent = `${targetWidth} × ${targetHeight} pixels`;
+            resizedCanvas = canvas;
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            if (resizedCanvas) {
+                const link = document.createElement('a');
+                const fileName = `${selectedSizeTitle.toLowerCase().replace(/\s+/g, '-')}-${targetWidth}x${targetHeight}.png`;
+                link.download = fileName;
+                link.href = resizedCanvas.toDataURL('image/png');
+                link.click();
+            }
+        });
+
+        // Custom size inputs
+        document.getElementById('customWidth').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') setCustomSize();
+        });
+        
+        document.getElementById('customHeight').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') setCustomSize();
+        });
+    </script>
+</body>
+</html>
